@@ -1,2 +1,2 @@
 #!/bin/bash
-PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port 10000
+PYTHONPATH=./backend uvicorn app.main:app --host 0.0.0.0 --port 10000
