@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, Header
 from pydantic import BaseModel
 from app.model import predict_fraud
+from app.db_utils import create_db_engine, test_connection
+from sqlalchemy import text
 
 app = FastAPI()
 
@@ -28,11 +30,8 @@ def predict(input: TransactionInput, _: str = Depends(verify_api_key)):
     prediction = predict_fraud(input.dict())
     return {"is_fraud": bool(prediction)}
 
-from app.db_utils import create_db_engine, test_connection
-from pydantic import BaseModel
-
 class DBConfig(BaseModel):
-    db_type: str         # "postgres" or "mysql"
+    db_type: str
     username: str
     password: str
     host: str
@@ -49,11 +48,6 @@ def test_db(config: DBConfig, _: str = Depends(verify_api_key)):
             return {"status": "fail", "message": "Connection failed"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
-
-from sqlalchemy import text
-from app.db_utils import create_db_engine
-from app.model import predict_fraud
 
 @app.post("/scan-db")
 def scan_db(config: DBConfig, _: str = Depends(verify_api_key)):
