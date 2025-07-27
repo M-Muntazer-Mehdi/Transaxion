@@ -74,3 +74,40 @@ def scan_db(config: DBConfig, _: str = Depends(verify_api_key)):
             return {"status": "success", "results": results}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+def get_rule_flags(data: dict):
+    flags = {
+        "high_amount": data.get("ratio_to_median_purchase_price", 0) > 3,
+        "night_time": False,  # You can extend later with timestamps
+        "suspicious_country": False  # Add this if you have country info
+    }
+
+    triggered = [k for k, v in flags.items() if v]
+    flags["total_flags"] = len(triggered)
+    flags["triggered_flags"] = triggered
+    return flags
+
+def calculate_final_score(ml_confidence: float, rule_flags: dict):
+    rule_score = rule_flags["total_flags"] * 5  # Each rule = 5%
+    final_score = min(ml_confidence * 0.7 + rule_score, 100)
+    return final_score
+
+@app.post("/predict-v2")
+def predict_v2(input: TransactionInput, _: str = Depends(verify_api_key)):
+    input_data = input.dict()
+    ml_prediction = predict_fraud(input_data)
+    ml_confidence = 92.5 if ml_prediction == 1 else 7.5  # Mock for now
+
+    rules = get_rule_flags(input_data)
+    final_score = calculate_final_score(ml_confidence, rules)
+
+    risk_level = "High" if final_score > 75 else "Medium" if final_score > 40 else "Low"
+
+    return {
+        "status": "success",
+        "ml_prediction": ml_prediction,
+        "ml_confidence": ml_confidence,
+        "rule_flags": rules,
+        "final_risk_score": final_score,
+        "risk_level": risk_level
+    }
