@@ -1,8 +1,9 @@
 import joblib
 import numpy as np
 
-# Load trained model (we'll save it later as model.pkl)
-model = joblib.load("app/model.pkl")
+import os
+model_path = os.path.join(os.path.dirname(__file__), "model.pkl")
+model = joblib.load(model_path)
 
 def predict_fraud(data: dict) -> int:
     """
