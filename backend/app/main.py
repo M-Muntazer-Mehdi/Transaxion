@@ -13,7 +13,7 @@ def verify_api_key(x_api_key: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
 class TransactionInput(BaseModel):
-     card_number: int
+    card_number: int
     distance_from_home: float
     distance_from_last_transaction: float
     ratio_to_median_purchase_price: float
