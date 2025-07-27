@@ -13,6 +13,7 @@ def verify_api_key(x_api_key: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
 class TransactionInput(BaseModel):
+     card_number: int
     distance_from_home: float
     distance_from_last_transaction: float
     ratio_to_median_purchase_price: float
@@ -95,7 +96,9 @@ def calculate_final_score(ml_confidence: float, rule_flags: dict):
 @app.post("/predict-v2")
 def predict_v2(input: TransactionInput, _: str = Depends(verify_api_key)):
     input_data = input.dict()
-    ml_prediction = predict_fraud(input_data)
+    ml_raw = predict_fraud(input_data)
+    ml_prediction = "Fraud" if ml_raw == 1 else "Not Fraud"
+
     ml_confidence = 92.5 if ml_prediction == 1 else 7.5  # Mock for now
 
     rules = get_rule_flags(input_data)
@@ -105,6 +108,7 @@ def predict_v2(input: TransactionInput, _: str = Depends(verify_api_key)):
 
     return {
         "status": "success",
+        "card_number": input.card_number,
         "ml_prediction": ml_prediction,
         "ml_confidence": ml_confidence,
         "rule_flags": rules,
