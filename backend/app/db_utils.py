@@ -2,16 +2,20 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
-def create_db_engine(db_type, username, password, host, port, dbname):
+import os
+
+def create_db_engine(db_type=None, username=None, password=None, host=None, port=None, dbname=None, url=None):
+    if url:
+        return create_engine(url)
+
     if db_type == "postgres":
         url = f"postgresql://{username}:{password}@{host}:{port}/{dbname}"
     elif db_type == "mysql":
         url = f"mysql+pymysql://{username}:{password}@{host}:{port}/{dbname}"
     else:
-        raise ValueError("Unsupported database type")
-    
-    engine = create_engine(url)
-    return engine
+        raise ValueError("Unsupported DB type")
+
+    return create_engine(url)
 
 def test_connection(engine):
     try:
