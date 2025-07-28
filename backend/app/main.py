@@ -125,7 +125,7 @@ import os
 
 load_dotenv()  # Load from .env
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL_NEW = os.getenv("DATABASE_URL_NEW")
 
 @app.post("/predict-v2-store")
 def predict_v2_store(input: TransactionInput, _: str = Depends(verify_api_key)):
@@ -140,7 +140,7 @@ def predict_v2_store(input: TransactionInput, _: str = Depends(verify_api_key)):
     risk_level = "High" if final_score > 75 else "Medium" if final_score > 40 else "Low"
 
     try:
-        engine = create_db_engine(url=DATABASE_URL)
+        engine = create_db_engine(url=DATABASE_URL_NEW)
         create_tables(engine)
         session = get_session(engine)
 
