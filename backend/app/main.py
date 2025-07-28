@@ -120,15 +120,12 @@ def predict_v2(input: TransactionInput, _: str = Depends(verify_api_key)):
 from app.models import PredictionResult
 from app.db_utils import create_tables, get_session
 
-# Railway DB config — replace with actual values or use environment variables
-RAILWAY_DB_CONFIG = {
-    "db_type": "postgresql",
-    "username": "your_username",
-    "password": "your_password",
-    "host": "your_host",  # e.g., containers-us-west-12.railway.app
-    "port": 5432,
-    "dbname": "your_dbname"
-}
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Load from .env
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 @app.post("/predict-v2-store")
 def predict_v2_store(input: TransactionInput, _: str = Depends(verify_api_key)):
@@ -143,7 +140,7 @@ def predict_v2_store(input: TransactionInput, _: str = Depends(verify_api_key)):
     risk_level = "High" if final_score > 75 else "Medium" if final_score > 40 else "Low"
 
     try:
-        engine = create_db_engine(**RAILWAY_DB_CONFIG)
+        engine = create_db_engine(url=DATABASE_URL)
         create_tables(engine)
         session = get_session(engine)
 
