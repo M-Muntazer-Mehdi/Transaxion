@@ -115,3 +115,67 @@ def predict_v2(input: TransactionInput, _: str = Depends(verify_api_key)):
         "final_risk_score": final_score,
         "risk_level": risk_level
     }
+
+
+from app.models import PredictionResult
+from app.db_utils import create_tables, get_session
+
+# Railway DB config — replace with actual values or use environment variables
+RAILWAY_DB_CONFIG = {
+    "db_type": "postgresql",
+    "username": "your_username",
+    "password": "your_password",
+    "host": "your_host",  # e.g., containers-us-west-12.railway.app
+    "port": 5432,
+    "dbname": "your_dbname"
+}
+
+@app.post("/predict-v2-store")
+def predict_v2_store(input: TransactionInput, _: str = Depends(verify_api_key)):
+    input_data = input.dict()
+    ml_raw = predict_fraud(input_data)
+    ml_prediction = "Fraud" if ml_raw == 1 else "Not Fraud"
+
+    ml_confidence = 92.5 if ml_prediction == "Fraud" else 7.5
+
+    rules = get_rule_flags(input_data)
+    final_score = calculate_final_score(ml_confidence, rules)
+    risk_level = "High" if final_score > 75 else "Medium" if final_score > 40 else "Low"
+
+    try:
+        engine = create_db_engine(**RAILWAY_DB_CONFIG)
+        create_tables(engine)
+        session = get_session(engine)
+
+        entry = PredictionResult(
+            card_number=str(input.card_number),
+            ml_prediction=ml_prediction,
+            ml_confidence=ml_confidence,
+            final_risk_score=final_score,
+            risk_level=risk_level,
+            rule_high_amount=rules["high_amount"],
+            rule_night_time=rules["night_time"],
+            rule_suspicious_country=rules["suspicious_country"],
+            total_flags=rules["total_flags"],
+            triggered_flags=",".join(rules["triggered_flags"])
+        )
+
+        session.add(entry)
+        session.commit()
+        session.close()
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Prediction succeeded, but DB insert failed: {str(e)}"
+        }
+
+    return {
+        "status": "success",
+        "card_number": input.card_number,
+        "ml_prediction": ml_prediction,
+        "ml_confidence": ml_confidence,
+        "rule_flags": rules,
+        "final_risk_score": final_score,
+        "risk_level": risk_level
+    }

@@ -25,3 +25,13 @@ def test_connection(engine):
     except SQLAlchemyError as e:
         print("DB ERROR:", e)
         return False
+
+from sqlalchemy.orm import sessionmaker
+from app.models import Base
+
+def create_tables(engine):
+    Base.metadata.create_all(bind=engine)
+
+def get_session(engine):
+    Session = sessionmaker(bind=engine)
+    return Session()
